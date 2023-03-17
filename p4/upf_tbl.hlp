@@ -1,0 +1,26 @@
+/* UL & DL Table entry config values */
+  grpc_iface = grpc_init()
+  nwipv4 = "13.7.1.110"
+  ueipv4 = "16.0.0.1"
+  nwport = 1235
+  ueport = 1234
+  protocol = 17
+  s1u_da = "00:00:00:00:00:03"
+  s1u_sa = "00:00:00:00:00:04"
+  s1u_vlanid = 1
+  sgi_da = "00:00:00:00:00:01"
+  sgi_sa = "00:00:00:00:00:02"
+  enb_ip = "11.7.1.100"
+  spgw_s1u_ip = "11.7.1.93"
+  s1u_teid = 12345678
+  sgi_vlanid = 2
+
+/* UL Entry Table */
+  ulentry_add(grpc_iface, nwipv4, ueipv4, nwport, ueport, protocol, s1u_da,
+              s1u_sa, s1u_vlanid)
+
+/* DL Entry Table */
+  dlentry_add(grpc_iface, nwipv4, ueipv4, nwport, ueport, protocol, sgi_da,
+              sgi_sa, enb_ip, spgw_s1u_ip, s1u_teid, sgi_vlanid)
+
+
