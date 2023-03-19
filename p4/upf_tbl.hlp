@@ -1,3 +1,21 @@
+/* Standard Reference:
+ *	https://www.3gpp.org/ **/
+/* Acronyms:
+ *	UE: 			User Equipment e.g. MObile Phone
+ *	UL:	UpLink: 	UE to Internet Traffic
+ *	DL: Downlink:	Internet to UE traffic
+ *	GPRS:			General Packet Radio Services
+ *	GTPU:			GPRS Tunneling Protocol
+ *	UPF:			User Plane Function
+ *	SGW:			Serving Packet Gateway
+ *	PGW:			Packet data Network (PDN) Gateway
+ *	UPF== 			SGW + PGW in 5G
+ *	eNB:			Mobile Cell toweer
+ *	S1U Interface:	3GPP defined interface name eNB termination on SGW or UPF
+ *	SGi Interface:	3GPP defined interface name for Internet termination on PGW or UPF
+ *	VLAN:			L2 Aggregation point for S1U and SGI traffic
+ * */
+
 /* UL & DL Table entry config values */
   grpc_iface = grpc_init()
   nwipv4 = "13.7.1.110"
