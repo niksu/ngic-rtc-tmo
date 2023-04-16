@@ -41,4 +41,14 @@
   dlentry_add(grpc_iface, nwipv4, ueipv4, nwport, ueport, protocol, sgi_da,
               sgi_sa, enb_ip, spgw_s1u_ip, s1u_teid, sgi_vlanid)
 
+/* ASR- Note: UL & DL Match Action Table */
+Condition for acceptance of the packet on the S1U interface: Valid ueipv4 in Uplink MAT. Key = ueipv4; Action - Admit
+
+If packet admitted in S1U interface w/ valid ueipv4::then
+Create Downlink MAT entry with s1u_teid corresponding to the ueipv4.
+A Packet coming into the SGi Interface will need to have a valid ueipv4.
+Key = ueipv4; Value= dlentry_add(elements); Action - Admit && Create GTPU header
+The GTPU header can then be created from dlentry_add(elements) specifically the s1u_teid
+
+Note: The s1u_teid is the eNB s1u_teid representing the end point created by the eNB for each UE at the time the UE requests for a session.
 
