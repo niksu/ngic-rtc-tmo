@@ -7,6 +7,7 @@ typedef bit<16> netPort;
 typedef bit<8> ipv4Proto;
 typedef bit<32> TEID;
 typedef bit<9> switchPort;
+typedef bit<80> packetByteCounter_t;
 
 #define ETHERTYPE_IPV4 0x0800
 #define TCP_PROTOCOL 0x06
@@ -142,6 +143,9 @@ control upfIngress(inout headers_t hdr,
     register<bit<32>>(1) idxs_r;
     bit<32> idx;
 
+    direct_counter(CounterType.packets_and_bytes) ue_ul_ctr;
+    direct_counter(CounterType.packets_and_bytes) ue_dl_ctr;
+
     action ulentry_add(switchPort egress_port, macAddr sgi_da, macAddr sgi_sa) {
         //Write UE IP and needed DL info to registers
         //Control plane will read and add/modify downlink table entries
@@ -176,6 +180,7 @@ control upfIngress(inout headers_t hdr,
             ulentry_add;
             NoAction;
         }
+        counters = ue_ul_ctr;
     }
 
     action dlentry_add(switchPort egress_port, macAddr s1u_da, macAddr s1u_sa,
@@ -220,6 +225,7 @@ control upfIngress(inout headers_t hdr,
             dlentry_add;
             NoAction;
         }
+        counters = ue_dl_ctr;
     }
 
 

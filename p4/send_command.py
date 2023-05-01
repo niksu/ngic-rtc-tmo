@@ -7,7 +7,7 @@ import argparse
 #The following used from Nik Sultana's implementation for Hangar
 def send_command(thrift_port, json, command):
     if not has_api:
-        raise Exception("Could not execute conmmands: Runtime API not present")
+        raise Exception("Could not execute commands: Runtime API not present")
     
     services = RuntimeAPI.get_thrift_services('SimplePre')
     services.extend(SimpleSwitchAPI.get_thrift_services())

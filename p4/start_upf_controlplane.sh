@@ -28,6 +28,14 @@ table_add() {
     ./send_command.py $JSON_PATH $THRIFT_PORT "table_add $1" | tail --lines 1 | cut -d " " -f 7
 }
 
+counter_read() {
+    ./send_command.py $JSON_PATH $THRIFT_PORT "counter_read $1" | tail --lines 1 | cut -d "(" -f 2 | cut -d ")" -f 1
+}
+
+ip_as_octal() {
+    echo "$(($1 >> 24)).$((($1 << 40) >> 56)).$((($1 << 48) >> 56)).$((($1 << 56) >> 56))" 
+}
+
 ctrs=()
 ips=()
 teids=()
@@ -41,18 +49,15 @@ for (( q=0; q<$REG_SIZE; q++ )); do
     ctrs+=( 0 )
 done
 
-#ctr=$(read_register "ue_ips_r 0")
-#echo $ctr
-
-#handle=$(table_add "downlink NoAction 192.0.0.2 =>")
-#echo $handle
 q=0
+int_regex='^[0-9]+$'
 while :; do
-    ctr=$(read_register "ctrs_r $q")
-    if [ $ctr != ${ctrs[$q]} ]; then
+    ctr=$(read_register "ctrs_r $q" 2>&1)
+    if [[ $ctr =~ $int_regex && $ctr != ${ctrs[$q]} ]]; then
         echo "New UL entry recorded"
         ip_exist=0
         ip=$(read_register "ue_ips_r $q")
+        ip_o=$(ip_as_octal $ip)
         teid=$(read_register "ue_teids_r $q")
         swport=$(read_register "swports_r $q")
         s1u_da=$(read_register "s1u_das_r $q")
@@ -65,16 +70,17 @@ while :; do
                 if [[ $teid != ${teids[$r]} || $swport != ${swports[$r]} || $s1u_da != ${s1u_das[$r]} ||\
                       $s1u_sa != ${s1u_sas[$r]} || $enb_ip != ${enb_ips[$r]} || $s1u_ip != ${s1u_ips[$r]} ]]
                     then
-                    echo "Updating existing DL entry for UE with IP $ip"
+                    echo "Updating existing DL entry for UE with IP $ip_o"
                     catch=$(table_modify "downlink dlentry_add ${handles[$r]} $swport $s1u_da $s1u_sa $enb_ip $s1u_ip $teid")
-                else
-                    echo "Nothing to update"
                 fi
+                #ue_ul_data=$(counter_read "ue_ul_ctr $r")
+                ue_dl_data=$(counter_read "ue_dl_ctr $r")
+                echo "UE with IP $ip_o has used ($ue_dl_data) of data on DL"
             fi
         done
         if [ $ip_exist == 0 ]; then
-            echo "Adding new DL entry for UE with IP $ip"
             handle=$(table_add "downlink dlentry_add $ip => $swport $s1u_da $s1u_sa $enb_ip $s1u_ip $teid")
+            echo "Added new DL entry for UE with IP $ip_o as entry $handle"
             ips+=( $ip )
             teids+=( $teid )
             swports+=( $swport )
@@ -83,8 +89,14 @@ while :; do
             enb_ips+=( $enb_ip )
             s1u_ips+=( $s1u_ip )
             handles+=( $handle )
+            #ue_ul_data=$(counter_read "ue_ul_ctr $handle")
+            ue_dl_data=$(counter_read "ue_dl_ctr $handle")
+            echo "UE with IP $ip_o has used ($ue_dl_data) of data on DL"
         fi
         ctrs[$q]=$ctr
         ((q++))
+        if [ $q -ge $REG_SIZE ]; then
+            q=0
+        fi
     fi
 done
