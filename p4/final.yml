@@ -1,0 +1,124 @@
+hosts:
+    sgi :
+         interfaces:
+             - mac: '00:00:00:00:00:01'
+               ip: 13.7.1.110
+               port: 1
+         programs:
+             - cmd: "echo 'Hello from sgi'"
+               fg: True
+             # upf
+             - cmd: "sudo arp -v -i sgi-eth1 -s 11.7.1.93 00:00:00:00:00:02"
+               fg: True
+             - cmd: "sudo route add default sgi-eth1"
+               fg: True
+             # ue1
+             - cmd: "sudo arp -v -i sgi-eth1 -s 16.0.0.1 00:00:00:00:01:02"
+             # ue2
+             - cmd: "sudo arp -v -i sgi-eth1 -s 16.0.0.2 00:00:00:00:02:02"
+             # ue3
+             - cmd: "sudo arp -v -i sgi-eth1 -s 16.0.0.3 00:00:00:00:02:04"
+
+    ue1 :
+         interfaces:
+             - mac: '00:00:00:00:01:02'
+               ip: 16.0.0.1
+               port: 1
+         programs:
+             - cmd: "echo 'Hello from ue1'"
+               fg: True
+             # enb1
+             - cmd: "sudo arp -v -i ue1-eth1 -s 11.7.1.100 00:00:00:00:01:01"
+               fg: True
+             - cmd: "sudo route add default ue1-eth1"
+               fg: True
+             # sgi
+             - cmd: "sudo arp -v -i ue1-eth1 -s 13.7.1.110 00:00:00:00:00:01"
+    ue2 :
+         interfaces:
+             - mac: '00:00:00:00:02:02'
+               ip: 16.0.0.2
+               port: 1
+         programs:
+             - cmd: "echo 'Hello from ue2'"
+               fg: True
+             # enb2
+             - cmd: "sudo arp -v -i ue2-eth1 -s 11.7.1.101 00:00:00:00:02:01"
+               fg: True
+             - cmd: "sudo route add default ue2-eth1"
+               fg: True
+             # sgi
+             - cmd: "sudo arp -v -i ue2-eth1 -s 13.7.1.110 00:00:00:00:00:01"
+    ue3 :
+         interfaces:
+             - mac: '00:00:00:00:02:04'
+               ip: 16.0.0.3
+               port: 1
+         programs:
+             - cmd: "echo 'Hello from ue3'"
+               fg: True
+             # enb2
+             - cmd: "sudo arp -v -i ue3-eth1 -s 11.7.1.101 00:00:00:00:02:03"
+               fg: True
+             - cmd: "sudo route add default ue3-eth1"
+               fg: True
+             # sgi
+             - cmd: "sudo arp -v -i ue3-eth1 -s 13.7.1.110 00:00:00:00:00:01"
+
+switches:
+   upf :
+         cfg: ../../build/BMv2/networks/upf/upf.json
+         interfaces:
+             - link: sgi
+               # ip: 13.7.1.100
+               mac: '00:00:00:00:00:02'
+               port: 1
+             - link: enb1
+               # ip: 11.7.1.100
+               mac: '00:00:00:00:00:03'
+               port: 2
+             - link: enb2
+               # ip: 11.7.1.101
+               mac: '00:00:00:00:00:05'
+               port: 3
+         cmds:
+             #Uplink
+             - table_add uplink ulentry_add 11.7.1.0&&&255.255.255.0 => 1 00:00:00:00:00:01 00:00:00:00:00:02 0
+
+   enb1 :
+         cfg: ../../build/BMv2/networks/upf/enb.json
+         interfaces:
+             - link: upf
+               # ip: 11.7.1.93
+               mac: '00:00:00:00:00:04'
+               port: 1
+             - link: ue1
+               # ip: 16.0.0.1
+               mac: '00:00:00:00:01:01'
+               port: 2
+         cmds:
+             #MAC Routing
+             - table_add dl_forwarding dl_forward 1 => 2 00:00:00:00:01:02 00:00:00:00:01:01
+             - table_add ul_forwarding ul_forward 16.0.0.1 => 1 00:00:00:00:00:03 00:00:00:00:00:04 11.7.1.100 11.7.1.93 1
+
+   enb2 :
+         cfg: ../../build/BMv2/networks/upf/enb.json
+         interfaces:
+             - link: upf
+               # ip: 11.7.1.93
+               mac: '00:00:00:00:00:06'
+               port: 1
+             - link: ue2
+               # ip: 16.0.0.2
+               mac: '00:00:00:00:02:01'
+               port: 2
+             - link: ue3
+               # ip: 16.0.0.3
+               mac: '00:00:00:00:02:03'
+               port: 3
+         cmds:
+             #MAC Routing
+             - table_add dl_forwarding dl_forward 2 => 2 00:00:00:00:02:02 00:00:00:00:02:01
+             - table_add dl_forwarding dl_forward 3 => 3 00:00:00:00:02:04 00:00:00:00:02:03
+             - table_add ul_forwarding ul_forward 16.0.0.2 => 1 00:00:00:00:00:05 00:00:00:00:00:06 11.7.1.101 11.7.1.93 2
+             - table_add ul_forwarding ul_forward 16.0.0.3 => 1 00:00:00:00:00:05 00:00:00:00:00:06 11.7.1.101 11.7.1.93 3
