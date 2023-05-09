@@ -12,6 +12,32 @@ Makefile: Used to build the P4 files into the used JSON files
 send_command.py: Helper file for start_upf_controlplane.sh to send commands to the UPF switch via thrift
 start_upf_controlplane.sh: Control plane script, configures DL entries so packets from 'sgi' route to UE hosts
 
+These files were built to run and tested using Hangar; setup steps for Hangar are below. However, the P4 files can be compiled using P4C and the resulting JSON files used in any BMv2 setup. The topology requirements are that there are devices on one side of the UPF (representing the internet), the other UPF connections are to eNB switches, and the eNB switches are connected to hosts or other simulated devices for UEs. The initial control plane commands to run are visibile in final.yml under "cmds" for each switch, but they are of the form:
+- UPF: table_add uplink ul_entry_add {eNB subnet}&&&{subnet mask} => {outgoing switch port} {outgoing dst MAC} {outgoing src MAC} 0 (only once, targets "internet" gateway)
+- eNB: table_add dl_forwarding dl_forward {device TEID} => {device switch port} {device MAC} {eNB MAC} (once per UE connected to eNB)
+       table_add ul_forwarding ul_forward {device IPv4} => {upf switch port} {upf MAC} {eNB MAC} {eNB IPv4} {UPF IPv4} {device TEID} (once per UE connected to eNB)
+Additionally, start_upf_controlplane.sh must be updated with the path to the UPF JSON and the thrift port the UPF switch is running on.
+
+The following instructions are for installing, compiling, and running on Hangar:
+Installing Hangar:
+Download hangargames1.tgz here: https://drive.google.com/drive/folders/1-IH7JH1rk_TcSmaxzPCQuK4yneVXT2Tr?usp=sharing
+Install vagrant and Oracle VirtualBox
+Uncompress hangargames1.tgz to a new directory and navigate there
+Run the command `vagrant init 6fb26064-45b0-4943-842f-4371962726c1 hangargames1.box`
+Run the command `vagrant up` and wait until it says "default: Warnining: Authentication failure. Retrying..." in a loop, then you can interrupt twice with ctrl-c and run `vagrant ssh`
+The default username and password to ssh in are 'vagrant'
+Enter ~/Hangar and run `make clean && make`
+Run `HANGARGAMES=/home/vagrant/Hangar/ networks/2net/run_2net.sh` and if the following output appears:
+```
+Running  ping -c 1 192.0.0.2 on h0 -- returned:0
+Running  ping -c 1 192.0.0.3 on h0 -- returned:0
+Running  ping -c 1 192.0.0.2 on h1 -- returned:0
+Running  ping -c 1 192.0.0.3 on h1 -- returned:0
+```
+Then Hangar is successfully setup.
+The files for this setup can be moved into Hangar using scp -P. The default port is 2222.
+The files should be placed in the directory ~/Hangar/networks/upf
+
 Compiling:
 By default, running 'make' will compile upf.p4 and enb.p4 into their .json forms and place them at ~/Hangar/build/BMv2/networks/upf/, starting from a directory in ~/Hangar/networks/ (so the path used is ../../build/BMV2/networks/upf/). If the intent is to compile the JSON files to another location, that location must be updated in the switch entries in final.yml under 'cfg:' (upf.json for upf and enb.json for enb1 and enb2) and within start_upf_controlplane.sh in the variable JSON_PATH.
 
